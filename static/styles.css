@@ -38,6 +38,11 @@ body {
   z-index: 10;
 }
 
+.brand-logo-left {
+  left: 16px;
+  right: auto;
+}
+
 .page {
   width: min(860px, 92%);
   margin: 40px auto;
@@ -144,6 +149,11 @@ button:hover {
     width: min(132px, 40vw);
     top: 12px;
     right: 12px;
+  }
+
+  .brand-logo-left {
+    left: 12px;
+    right: auto;
   }
 
   .file-list li {
