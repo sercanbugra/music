@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 import shutil
 import subprocess
 import sys
@@ -15,10 +16,15 @@ UPLOAD_DIR = BASE_DIR / "web_uploads"
 OUTPUT_DIR = BASE_DIR / "web_outputs"
 ALLOWED_EXTENSIONS = {".mp3"}
 DEFAULT_STEMS = 4
+JOB_STATUS_PROCESSING = "processing"
+JOB_STATUS_DONE = "done"
+JOB_STATUS_ERROR = "error"
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "music-splitter-local-dev")
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
+JOBS: dict[str, dict[str, object]] = {}
+JOBS_LOCK = threading.Lock()
 
 
 def ensure_dirs() -> None:
@@ -68,6 +74,52 @@ def run_separation(input_file: Path, stems: int) -> tuple[bool, str, str]:
     return True, job_id, track_folder
 
 
+def set_job(job_id: str, data: dict[str, object]) -> None:
+    with JOBS_LOCK:
+        if job_id not in JOBS:
+            JOBS[job_id] = {}
+        JOBS[job_id].update(data)
+
+
+def get_job(job_id: str) -> dict[str, object] | None:
+    with JOBS_LOCK:
+        return JOBS.get(job_id)
+
+
+def process_job(job_id: str, input_path: Path, stems_value: int) -> None:
+    success, result_job_id, result = run_separation(input_path, stems_value)
+    if not success:
+        set_job(
+            job_id,
+            {
+                "status": JOB_STATUS_ERROR,
+                "error": f"Separation failed: {result}",
+            },
+        )
+        return
+
+    stem_files = list_stems(result_job_id, result)
+    if not stem_files:
+        set_job(
+            job_id,
+            {
+                "status": JOB_STATUS_ERROR,
+                "error": "Output files were not found.",
+            },
+        )
+        return
+
+    set_job(
+        job_id,
+        {
+            "status": JOB_STATUS_DONE,
+            "files": stem_files,
+            "track_folder": result,
+            "error": "",
+        },
+    )
+
+
 def list_stems(job_id: str, track_folder: str) -> list[str]:
     target = OUTPUT_DIR / job_id / track_folder
     if not target.exists():
@@ -77,7 +129,15 @@ def list_stems(job_id: str, track_folder: str) -> list[str]:
 
 @app.get("/")
 def index():
-    return render_template("index.html", stems=DEFAULT_STEMS, files=[], job_id="", track_folder="")
+    return render_template(
+        "index.html",
+        stems=DEFAULT_STEMS,
+        files=[],
+        job_id="",
+        track_folder="",
+        job_status="",
+        error_message="",
+    )
 
 
 @app.post("/separate")
@@ -112,23 +172,48 @@ def separate():
     input_path = UPLOAD_DIR / saved_name
     upload.save(input_path)
 
-    success, job_id, result = run_separation(input_path, stems_value)
-    if not success:
-        flash(f"Separation failed: {result}", "error")
+    job_id = uuid.uuid4().hex[:8]
+    set_job(
+        job_id,
+        {
+            "status": JOB_STATUS_PROCESSING,
+            "files": [],
+            "track_folder": "",
+            "error": "",
+            "stems": stems_value,
+        },
+    )
+
+    worker = threading.Thread(
+        target=process_job,
+        args=(job_id, input_path, stems_value),
+        daemon=True,
+    )
+    worker.start()
+    return redirect(url_for("job_status", job_id=job_id))
+
+
+@app.get("/job/<job_id>")
+def job_status(job_id: str):
+    job = get_job(job_id)
+    if job is None:
+        flash("Job was not found.", "error")
         return redirect(url_for("index"))
 
-    stem_files = list_stems(job_id, result)
-    if not stem_files:
-        flash("Output files were not found.", "error")
-        return redirect(url_for("index"))
+    status = str(job.get("status", ""))
+    files = list(job.get("files", []))
+    track_folder = str(job.get("track_folder", ""))
+    error_message = str(job.get("error", ""))
+    stems_value = int(job.get("stems", DEFAULT_STEMS))
 
-    flash("Separation completed. You can download the stems below.", "success")
     return render_template(
         "index.html",
         stems=stems_value,
-        files=stem_files,
+        files=files,
         job_id=job_id,
-        track_folder=result,
+        track_folder=track_folder,
+        job_status=status,
+        error_message=error_message,
     )
 
 
