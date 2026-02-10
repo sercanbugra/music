@@ -22,5 +22,5 @@ primary_region = "iad"
 [[vm]]
   cpu_kind = "shared"
   cpus = 2
-  memory_mb = 4096
+  memory_mb = 8192
 
