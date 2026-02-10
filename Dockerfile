@@ -2,18 +2,28 @@
 FROM python:3.10-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    MODEL_PATH=/app/pretrained_models
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsndfile1 \
+    curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
 RUN python -m pip install --upgrade pip setuptools wheel \
     && pip install --no-cache-dir -r requirements.txt
+
+# Preload 4stems model at build-time to avoid runtime download timeouts.
+RUN mkdir -p /app/pretrained_models/4stems \
+    && curl -L "https://github.com/deezer/spleeter/releases/download/v1.4.0/4stems.tar.gz" -o /tmp/4stems.tar.gz \
+    && tar -xzf /tmp/4stems.tar.gz -C /app/pretrained_models/4stems \
+    && echo OK > /app/pretrained_models/4stems/.probe \
+    && rm -f /tmp/4stems.tar.gz
 
 COPY . .
 

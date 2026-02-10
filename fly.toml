@@ -6,6 +6,7 @@ primary_region = "fra"
 
 [env]
   PORT = "8080"
+  MODEL_PATH = "/app/pretrained_models"
 
 [http_service]
   internal_port = 8080
@@ -18,4 +19,4 @@ primary_region = "fra"
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 1024
+  memory_mb = 2048
