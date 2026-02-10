@@ -72,7 +72,18 @@ def run_separation(input_file: Path, stems: int) -> tuple[bool, str, str]:
 
     completed = subprocess.run(cmd, capture_output=True, text=True)
     if completed.returncode != 0:
-        return False, job_id, (completed.stderr or completed.stdout or "Unknown error").strip()
+        raw_error = (completed.stderr or completed.stdout or "").strip()
+        if raw_error and "ERROR" not in raw_error and "Traceback" not in raw_error:
+            raw_error = (
+                f"{raw_error} | Process exited with code {completed.returncode}. "
+                "Likely memory limit or machine stop."
+            )
+        if not raw_error:
+            raw_error = (
+                f"Process exited with code {completed.returncode}. "
+                "Likely memory limit or machine stop."
+            )
+        return False, job_id, raw_error
 
     track_folder = input_file.stem
     return True, job_id, track_folder
