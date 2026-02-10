@@ -6,6 +6,7 @@ import subprocess
 import sys
 import uuid
 import os
+import json
 from pathlib import Path
 
 from flask import Flask, flash, redirect, render_template, request, send_file, url_for
@@ -14,6 +15,7 @@ from werkzeug.utils import secure_filename
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "web_uploads"
 OUTPUT_DIR = BASE_DIR / "web_outputs"
+JOB_DIR = BASE_DIR / "web_jobs"
 ALLOWED_EXTENSIONS = {".mp3"}
 DEFAULT_STEMS = int(os.getenv("DEFAULT_STEMS", "2"))
 MAX_ALLOWED_STEMS = int(os.getenv("MAX_ALLOWED_STEMS", "2"))
@@ -31,6 +33,7 @@ JOBS_LOCK = threading.Lock()
 def ensure_dirs() -> None:
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    JOB_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def check_dependencies() -> tuple[bool, str]:
@@ -80,11 +83,38 @@ def set_job(job_id: str, data: dict[str, object]) -> None:
         if job_id not in JOBS:
             JOBS[job_id] = {}
         JOBS[job_id].update(data)
+        payload = JOBS[job_id]
+    save_job(job_id, payload)
 
 
 def get_job(job_id: str) -> dict[str, object] | None:
     with JOBS_LOCK:
-        return JOBS.get(job_id)
+        if job_id in JOBS:
+            return JOBS[job_id]
+    disk_job = load_job(job_id)
+    if disk_job is None:
+        return None
+    with JOBS_LOCK:
+        JOBS[job_id] = disk_job
+    return disk_job
+
+
+def job_file(job_id: str) -> Path:
+    return JOB_DIR / f"{job_id}.json"
+
+
+def save_job(job_id: str, data: dict[str, object]) -> None:
+    path = job_file(job_id)
+    with path.open("w", encoding="utf-8") as stream:
+        json.dump(data, stream)
+
+
+def load_job(job_id: str) -> dict[str, object] | None:
+    path = job_file(job_id)
+    if not path.exists():
+        return None
+    with path.open("r", encoding="utf-8") as stream:
+        return json.load(stream)
 
 
 def process_job(job_id: str, input_path: Path, stems_value: int) -> None:
