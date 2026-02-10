@@ -1,0 +1,13 @@
+.venv/
+.venv2/
+__pycache__/
+*.pyc
+
+inputs/
+outputs/
+web_uploads/
+web_outputs/
+pretrained_models/
+
+.DS_Store
+Thumbs.db

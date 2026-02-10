@@ -1,0 +1,153 @@
+:root {
+  --bg: #f7f4ec;
+  --text: #1f1d1a;
+  --card: #fffdfa;
+  --border: #d7ccb4;
+  --primary: #2b6a63;
+  --primary-dark: #1f4f49;
+  --error-bg: #ffe8e7;
+  --error-text: #8a1f1b;
+  --success-bg: #e8f8ef;
+  --success-text: #185c35;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top right, #fbe3c7 0%, transparent 45%),
+    radial-gradient(circle at bottom left, #d7f0ec 0%, transparent 40%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+.brand-logo {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: min(180px, 32vw);
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.16);
+  z-index: 10;
+}
+
+.page {
+  width: min(860px, 92%);
+  margin: 40px auto;
+  display: grid;
+  gap: 18px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 28px rgba(31, 29, 26, 0.08);
+}
+
+h1,
+h2 {
+  margin-top: 0;
+}
+
+.upload-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.label {
+  font-weight: 600;
+}
+
+input[type="file"],
+select,
+button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 15px;
+}
+
+button {
+  border: 0;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+button:hover {
+  background: var(--primary-dark);
+}
+
+.alerts {
+  display: grid;
+  gap: 8px;
+}
+
+.alert {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.alert.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.alert.success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.file-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.file-list a {
+  text-decoration: none;
+  color: #fff;
+  background: var(--primary);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .brand-logo {
+    width: min(132px, 40vw);
+    top: 12px;
+    right: 12px;
+  }
+
+  .file-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

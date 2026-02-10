@@ -1,0 +1,8 @@
+blinker==1.4
+click==7.1.2
+Flask==2.0.3
+gunicorn==21.2.0
+itsdangerous==2.0.1
+Jinja2==3.0.3
+spleeter==2.4.2
+Werkzeug==2.0.3

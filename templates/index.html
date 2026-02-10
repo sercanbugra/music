@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Music Stem Splitter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <img class="brand-logo" src="{{ url_for('static', filename='logo.png') }}" alt="Brand logo">
+    <main class="page">
+      <section class="card">
+        <h1>Music Stem Splitter</h1>
+        <p>Upload an MP3 file, split it into stems, then download any stem you need.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="alerts">
+              {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('separate') }}" method="post" enctype="multipart/form-data" class="upload-form">
+          <label for="audio_file" class="label">MP3 File</label>
+          <input id="audio_file" name="audio_file" type="file" accept=".mp3,audio/mpeg" required>
+
+          <label for="stems" class="label">Stem Count</label>
+          <select id="stems" name="stems">
+            <option value="4" {% if stems == 4 %}selected{% endif %}>4 stems (default)</option>
+            <option value="2" {% if stems == 2 %}selected{% endif %}>2 stems</option>
+            <option value="5" {% if stems == 5 %}selected{% endif %}>5 stems</option>
+          </select>
+
+          <button type="submit">Upload and Split</button>
+        </form>
+      </section>
+
+      {% if files %}
+        <section class="card result">
+          <h2>Downloadable Stems</h2>
+          <ul class="file-list">
+            {% for stem_file in files %}
+              <li>
+                <span>{{ stem_file }}</span>
+                <a href="{{ url_for('download', job_id=job_id, track_folder=track_folder, filename=stem_file) }}">Download</a>
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    </main>
+  </body>
+  </html>
