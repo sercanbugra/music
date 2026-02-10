@@ -15,14 +15,15 @@ BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "web_uploads"
 OUTPUT_DIR = BASE_DIR / "web_outputs"
 ALLOWED_EXTENSIONS = {".mp3"}
-DEFAULT_STEMS = 4
+DEFAULT_STEMS = int(os.getenv("DEFAULT_STEMS", "2"))
+MAX_ALLOWED_STEMS = int(os.getenv("MAX_ALLOWED_STEMS", "2"))
 JOB_STATUS_PROCESSING = "processing"
 JOB_STATUS_DONE = "done"
 JOB_STATUS_ERROR = "error"
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "music-splitter-local-dev")
-app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_CONTENT_LENGTH_MB", "40")) * 1024 * 1024
 JOBS: dict[str, dict[str, object]] = {}
 JOBS_LOCK = threading.Lock()
 
@@ -166,6 +167,8 @@ def separate():
         stems_value = DEFAULT_STEMS
     if stems_value not in {2, 4, 5}:
         stems_value = DEFAULT_STEMS
+    if stems_value > MAX_ALLOWED_STEMS:
+        stems_value = MAX_ALLOWED_STEMS
 
     job_prefix = uuid.uuid4().hex[:8]
     saved_name = f"{job_prefix}_{filename}"

@@ -7,6 +7,9 @@ primary_region = "fra"
 [env]
   PORT = "8080"
   MODEL_PATH = "/app/pretrained_models"
+  DEFAULT_STEMS = "2"
+  MAX_ALLOWED_STEMS = "2"
+  MAX_CONTENT_LENGTH_MB = "40"
 
 [http_service]
   internal_port = 8080
