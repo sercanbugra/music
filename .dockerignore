@@ -1,0 +1,12 @@
+.git
+__pycache__
+*.pyc
+
+inputs
+outputs
+web_uploads
+web_outputs
+pretrained_models
+
+.venv
+.venv2
