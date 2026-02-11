@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import threading
 import shutil
@@ -18,7 +18,7 @@ OUTPUT_DIR = BASE_DIR / "web_outputs"
 JOB_DIR = BASE_DIR / "web_jobs"
 ALLOWED_EXTENSIONS = {".mp3"}
 DEFAULT_STEMS = int(os.getenv("DEFAULT_STEMS", "2"))
-MAX_ALLOWED_STEMS = int(os.getenv("MAX_ALLOWED_STEMS", "2"))
+MAX_ALLOWED_STEMS = int(os.getenv("MAX_ALLOWED_STEMS", "4"))
 JOB_STATUS_PROCESSING = "processing"
 JOB_STATUS_DONE = "done"
 JOB_STATUS_ERROR = "error"
@@ -206,7 +206,7 @@ def separate():
         stems_value = int(stems)
     except ValueError:
         stems_value = DEFAULT_STEMS
-    if stems_value not in {2, 4, 5}:
+    if stems_value not in {2, 4}:
         stems_value = DEFAULT_STEMS
     if stems_value > MAX_ALLOWED_STEMS:
         stems_value = MAX_ALLOWED_STEMS
@@ -279,3 +279,4 @@ if __name__ == "__main__":
     ensure_dirs()
     port = int(os.getenv("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+

@@ -29,10 +29,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--stems",
-        choices=(2, 4, 5),
+        choices=(2, 4),
         type=int,
         default=4,
-        help="Number of stems (2, 4, or 5).",
+        help="Number of stems (2 or 4).",
     )
     return parser.parse_args()
 
@@ -108,3 +108,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

@@ -18,7 +18,7 @@ COPY requirements.txt ./
 RUN python -m pip install --upgrade pip setuptools wheel \
     && pip install --no-cache-dir -r requirements.txt
 
-# Preload all stem models at build-time to avoid runtime model downloads.
+# Preload supported stem models at build-time to avoid runtime model downloads.
 RUN mkdir -p /app/pretrained_models/2stems \
     && curl -L "https://github.com/deezer/spleeter/releases/download/v1.4.0/2stems.tar.gz" -o /tmp/2stems.tar.gz \
     && tar -xzf /tmp/2stems.tar.gz -C /app/pretrained_models/2stems \
@@ -28,12 +28,7 @@ RUN mkdir -p /app/pretrained_models/2stems \
     && curl -L "https://github.com/deezer/spleeter/releases/download/v1.4.0/4stems.tar.gz" -o /tmp/4stems.tar.gz \
     && tar -xzf /tmp/4stems.tar.gz -C /app/pretrained_models/4stems \
     && echo OK > /app/pretrained_models/4stems/.probe \
-    && rm -f /tmp/4stems.tar.gz \
-    && mkdir -p /app/pretrained_models/5stems \
-    && curl -L "https://github.com/deezer/spleeter/releases/download/v1.4.0/5stems.tar.gz" -o /tmp/5stems.tar.gz \
-    && tar -xzf /tmp/5stems.tar.gz -C /app/pretrained_models/5stems \
-    && echo OK > /app/pretrained_models/5stems/.probe \
-    && rm -f /tmp/5stems.tar.gz
+    && rm -f /tmp/4stems.tar.gz
 
 COPY . .
 
