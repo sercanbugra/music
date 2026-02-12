@@ -22,6 +22,7 @@ MAX_ALLOWED_STEMS = int(os.getenv("MAX_ALLOWED_STEMS", "4"))
 JOB_STATUS_PROCESSING = "processing"
 JOB_STATUS_DONE = "done"
 JOB_STATUS_ERROR = "error"
+CHUNK_SECONDS = int(os.getenv("CHUNK_SECONDS", "45"))
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "music-splitter-local-dev")
@@ -57,36 +58,122 @@ def run_separation(input_file: Path, stems: int) -> tuple[bool, str, str]:
     job_id = uuid.uuid4().hex[:8]
     job_output = OUTPUT_DIR / job_id
     job_output.mkdir(parents=True, exist_ok=True)
+    chunk_dir = job_output / "_chunks"
+    chunk_sep_dir = job_output / "_chunk_outputs"
+    merged_dir = job_output / input_file.stem
+    chunk_dir.mkdir(parents=True, exist_ok=True)
+    chunk_sep_dir.mkdir(parents=True, exist_ok=True)
+    merged_dir.mkdir(parents=True, exist_ok=True)
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "spleeter",
-        "separate",
-        "-p",
-        f"spleeter:{stems}stems",
-        "-o",
-        str(job_output),
+    model_name = model_for_stems(stems)
+    stem_names = stem_names_for(stems)
+
+    ffmpeg_split_cmd = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
         str(input_file),
+        "-f",
+        "segment",
+        "-segment_time",
+        str(CHUNK_SECONDS),
+        "-c",
+        "copy",
+        str(chunk_dir / "chunk_%04d.mp3"),
     ]
+    split_ok, split_err = run_command(ffmpeg_split_cmd)
+    if not split_ok:
+        return False, job_id, f"Chunk split failed: {split_err}"
 
+    chunk_files = sorted(chunk_dir.glob("chunk_*.mp3"))
+    if not chunk_files:
+        return False, job_id, "No chunks were generated from input file."
+
+    for chunk in chunk_files:
+        cmd = [
+            sys.executable,
+            "-m",
+            "spleeter",
+            "separate",
+            "-p",
+            model_name,
+            "-o",
+            str(chunk_sep_dir),
+            str(chunk),
+        ]
+        ok, err = run_command(cmd)
+        if not ok:
+            return False, job_id, err
+
+    for stem_name in stem_names:
+        stem_parts: list[Path] = []
+        for chunk in chunk_files:
+            part = chunk_sep_dir / chunk.stem / f"{stem_name}.wav"
+            if not part.exists():
+                return False, job_id, f"Missing chunk output: {part.name}"
+            stem_parts.append(part)
+
+        concat_list = merged_dir / f"_{stem_name}_concat.txt"
+        with concat_list.open("w", encoding="utf-8") as stream:
+            for part in stem_parts:
+                stream.write(f"file '{part.as_posix()}'\n")
+
+        merge_cmd = [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_list),
+            "-c",
+            "copy",
+            str(merged_dir / f"{stem_name}.wav"),
+        ]
+        merged_ok, merged_err = run_command(merge_cmd)
+        if not merged_ok:
+            return False, job_id, f"Stem merge failed for {stem_name}: {merged_err}"
+
+    return True, job_id, input_file.stem
+
+
+def run_command(cmd: list[str]) -> tuple[bool, str]:
     completed = subprocess.run(cmd, capture_output=True, text=True)
-    if completed.returncode != 0:
-        raw_error = (completed.stderr or completed.stdout or "").strip()
-        if raw_error and "ERROR" not in raw_error and "Traceback" not in raw_error:
-            raw_error = (
-                f"{raw_error} | Process exited with code {completed.returncode}. "
-                "Likely memory limit or machine stop."
-            )
-        if not raw_error:
-            raw_error = (
-                f"Process exited with code {completed.returncode}. "
-                "Likely memory limit or machine stop."
-            )
-        return False, job_id, raw_error
+    if completed.returncode == 0:
+        return True, ""
+    raw_error = (completed.stderr or completed.stdout or "").strip()
+    if raw_error and "ERROR" not in raw_error and "Traceback" not in raw_error:
+        raw_error = (
+            f"{raw_error} | Process exited with code {completed.returncode}. "
+            "Likely memory limit or machine stop."
+        )
+    if not raw_error:
+        raw_error = (
+            f"Process exited with code {completed.returncode}. "
+            "Likely memory limit or machine stop."
+        )
+    return False, raw_error
 
-    track_folder = input_file.stem
-    return True, job_id, track_folder
+
+def model_for_stems(stems: int) -> str:
+    if stems == 2:
+        return "spleeter:2stems-16kHz"
+    if stems == 4:
+        return "spleeter:4stems-16kHz"
+    raise ValueError(f"Unsupported stems value: {stems}")
+
+
+def stem_names_for(stems: int) -> list[str]:
+    if stems == 2:
+        return ["vocals", "accompaniment"]
+    if stems == 4:
+        return ["vocals", "drums", "bass", "other"]
+    raise ValueError(f"Unsupported stems value: {stems}")
 
 
 def set_job(job_id: str, data: dict[str, object]) -> None:

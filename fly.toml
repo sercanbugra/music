@@ -1,4 +1,4 @@
-﻿app = "music-3qdida"
+app = "music-3qdida"
 primary_region = "iad"
 
 [build]
@@ -9,7 +9,7 @@ primary_region = "iad"
   MODEL_PATH = "/app/pretrained_models"
   DEFAULT_STEMS = "2"
   MAX_ALLOWED_STEMS = "4"
-  MAX_CONTENT_LENGTH_MB = "40"
+  MAX_CONTENT_LENGTH_MB = "40"`r`n  CHUNK_SECONDS = "45"
 
 [http_service]
   internal_port = 8080
@@ -23,5 +23,6 @@ primary_region = "iad"
   cpu_kind = "shared"
   cpus = 4
   memory_mb = 8192
+
 
 
