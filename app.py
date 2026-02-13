@@ -161,9 +161,9 @@ def run_command(cmd: list[str]) -> tuple[bool, str]:
 
 def model_for_stems(stems: int) -> str:
     if stems == 2:
-        return "spleeter:2stems-16kHz"
+        return "spleeter:2stems"
     if stems == 4:
-        return "spleeter:4stems-16kHz"
+        return "spleeter:4stems"
     raise ValueError(f"Unsupported stems value: {stems}")
 
 
@@ -365,4 +365,5 @@ if __name__ == "__main__":
     ensure_dirs()
     port = int(os.getenv("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 

@@ -19,19 +19,18 @@ RUN python -m pip install --upgrade pip setuptools wheel \
     && pip install --no-cache-dir -r requirements.txt
 
 # Preload supported stem models at build-time to avoid runtime model downloads.
-RUN mkdir -p /app/pretrained_models/2stems-16kHz \
-    && curl -L "https://github.com/deezer/spleeter/releases/download/v1.4.0/2stems-16kHz.tar.gz" -o /tmp/2stems-16kHz.tar.gz \
-    && tar -xzf /tmp/2stems-16kHz.tar.gz -C /app/pretrained_models/2stems-16kHz \
-    && echo OK > /app/pretrained_models/2stems-16kHz/.probe \
-    && rm -f /tmp/2stems-16kHz.tar.gz \
-    && mkdir -p /app/pretrained_models/4stems-16kHz \
-    && curl -L "https://github.com/deezer/spleeter/releases/download/v1.4.0/4stems-16kHz.tar.gz" -o /tmp/4stems-16kHz.tar.gz \
-    && tar -xzf /tmp/4stems-16kHz.tar.gz -C /app/pretrained_models/4stems-16kHz \
-    && echo OK > /app/pretrained_models/4stems-16kHz/.probe \
-    && rm -f /tmp/4stems-16kHz.tar.gz
+RUN mkdir -p /app/pretrained_models/2stems \
+    && curl -fL "https://github.com/deezer/spleeter/releases/download/v1.4.0/2stems.tar.gz" -o /tmp/2stems.tar.gz \
+    && tar -xzf /tmp/2stems.tar.gz -C /app/pretrained_models/2stems \
+    && echo OK > /app/pretrained_models/2stems/.probe \
+    && rm -f /tmp/2stems.tar.gz \
+    && mkdir -p /app/pretrained_models/4stems \
+    && curl -fL "https://github.com/deezer/spleeter/releases/download/v1.4.0/4stems.tar.gz" -o /tmp/4stems.tar.gz \
+    && tar -xzf /tmp/4stems.tar.gz -C /app/pretrained_models/4stems \
+    && echo OK > /app/pretrained_models/4stems/.probe \
+    && rm -f /tmp/4stems.tar.gz
 
 COPY . .
 
 EXPOSE 8080
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "1", "--timeout", "300"]
-
