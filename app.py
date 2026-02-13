@@ -54,8 +54,7 @@ def check_dependencies() -> tuple[bool, str]:
     return True, ""
 
 
-def run_separation(input_file: Path, stems: int) -> tuple[bool, str, str]:
-    job_id = uuid.uuid4().hex[:8]
+def run_separation(input_file: Path, stems: int, job_id: str) -> tuple[bool, str]:
     job_output = OUTPUT_DIR / job_id
     job_output.mkdir(parents=True, exist_ok=True)
     chunk_dir = job_output / "_chunks"
@@ -85,11 +84,11 @@ def run_separation(input_file: Path, stems: int) -> tuple[bool, str, str]:
     ]
     split_ok, split_err = run_command(ffmpeg_split_cmd)
     if not split_ok:
-        return False, job_id, f"Chunk split failed: {split_err}"
+        return False, f"Chunk split failed: {split_err}"
 
     chunk_files = sorted(chunk_dir.glob("chunk_*.mp3"))
     if not chunk_files:
-        return False, job_id, "No chunks were generated from input file."
+        return False, "No chunks were generated from input file."
 
     for chunk in chunk_files:
         cmd = [
@@ -105,14 +104,14 @@ def run_separation(input_file: Path, stems: int) -> tuple[bool, str, str]:
         ]
         ok, err = run_command(cmd)
         if not ok:
-            return False, job_id, err
+            return False, err
 
     for stem_name in stem_names:
         stem_parts: list[Path] = []
         for chunk in chunk_files:
             part = chunk_sep_dir / chunk.stem / f"{stem_name}.wav"
             if not part.exists():
-                return False, job_id, f"Missing chunk output: {part.name}"
+                return False, f"Missing chunk output: {part.name}"
             stem_parts.append(part)
 
         concat_list = merged_dir / f"_{stem_name}_concat.txt"
@@ -137,9 +136,9 @@ def run_separation(input_file: Path, stems: int) -> tuple[bool, str, str]:
         ]
         merged_ok, merged_err = run_command(merge_cmd)
         if not merged_ok:
-            return False, job_id, f"Stem merge failed for {stem_name}: {merged_err}"
+            return False, f"Stem merge failed for {stem_name}: {merged_err}"
 
-    return True, job_id, input_file.stem
+    return True, input_file.stem
 
 
 def run_command(cmd: list[str]) -> tuple[bool, str]:
@@ -216,7 +215,7 @@ def load_job(job_id: str) -> dict[str, object] | None:
 
 
 def process_job(job_id: str, input_path: Path, stems_value: int) -> None:
-    success, result_job_id, result = run_separation(input_path, stems_value)
+    success, result = run_separation(input_path, stems_value, job_id)
     if not success:
         set_job(
             job_id,
@@ -227,7 +226,7 @@ def process_job(job_id: str, input_path: Path, stems_value: int) -> None:
         )
         return
 
-    stem_files = list_stems(result_job_id, result)
+    stem_files = list_stems(job_id, result)
     if not stem_files:
         set_job(
             job_id,
